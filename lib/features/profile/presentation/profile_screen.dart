@@ -327,7 +327,7 @@ String _freezeHint(AppUser? profile) {
   if (days == 0) {
     return '$word в запасе · зажги огонёк сегодня';
   }
-  return '$word в запасе · не обнуляет огонёк';
+  return '$word в запасе';
 }
 
 String _freezeWord(int n) {

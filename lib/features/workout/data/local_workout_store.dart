@@ -94,4 +94,52 @@ class LocalWorkoutDraft {
   final DateTime startedAt;
   final bool fromTemplate;
   final List<WorkoutExercise> exercises;
+
+  /// Закрывает следующий незакрытый подход и сохраняет черновик.
+  /// Возвращает название упражнения или null.
+  Future<String?> completeNextSetAndSave(LocalWorkoutStore store) async {
+    for (var ei = 0; ei < exercises.length; ei++) {
+      final exercise = exercises[ei];
+      for (var si = 0; si < exercise.sets.length; si++) {
+        final set = exercise.sets[si];
+        if (set.done) continue;
+        final newSets = [...exercise.sets];
+        newSets[si] = set.copyWith(done: true);
+        final updated = [...exercises];
+        updated[ei] = exercise.copyWith(sets: newSets);
+        await store.save(
+          startedAt: startedAt,
+          fromTemplate: fromTemplate,
+          exercises: updated,
+        );
+        return exercise.name;
+      }
+    }
+    return null;
+  }
+
+  String? get nextExerciseName {
+    for (final exercise in exercises) {
+      if (exercise.sets.any((s) => !s.done)) return exercise.name;
+    }
+    return null;
+  }
+
+  String? get nextExerciseId {
+    for (final exercise in exercises) {
+      if (exercise.sets.any((s) => !s.done)) return exercise.exerciseId;
+    }
+    return null;
+  }
+
+  (int index, int count)? get nextSetProgress {
+    for (final exercise in exercises) {
+      for (var i = 0; i < exercise.sets.length; i++) {
+        if (!exercise.sets[i].done) {
+          return (i, exercise.sets.length);
+        }
+      }
+    }
+    return null;
+  }
 }

@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'features/achievements/presentation/achievements_screen.dart';
@@ -42,8 +43,13 @@ import 'features/workout/presentation/workout_history_screen.dart';
 import 'features/workout/presentation/workout_hub_screen.dart';
 import 'features/workout/presentation/workout_summary_screen.dart';
 
+/// Корневой navigator — для bottom sheet / overlay извне роутов (таймер отдыха).
+final GlobalKey<NavigatorState> rootNavigatorKey =
+    GlobalKey<NavigatorState>(debugLabel: 'root');
+
 GoRouter createRouter(AuthController auth) {
   return GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: '/splash',
     refreshListenable: auth,
     redirect: (context, state) {

@@ -19,6 +19,7 @@ import '../data/template_repository.dart';
 import '../data/workout_repository.dart';
 import '../domain/saved_workout.dart';
 import '../domain/workout_template.dart';
+import 'start_workout_guard.dart';
 
 class WorkoutHubScreen extends StatefulWidget {
   const WorkoutHubScreen({super.key});
@@ -45,8 +46,21 @@ class _WorkoutHubScreenState extends State<WorkoutHubScreen> {
     setState(() => _draft = draft);
   }
 
-  void _startEmptyWorkout(BuildContext context) {
-    context.push('/workout/active').then((_) => _loadDraft());
+  Future<void> _startEmpty() async {
+    await startWorkoutGuarded(context);
+    if (mounted) await _loadDraft();
+  }
+
+  Future<void> _startTemplate(WorkoutTemplate t) async {
+    await startWorkoutGuarded(context, template: t);
+    if (mounted) await _loadDraft();
+  }
+
+  Future<void> _continueDraft() async {
+    final draft = _draft;
+    if (draft == null) return;
+    await startWorkoutGuarded(context, restore: draft);
+    if (mounted) await _loadDraft();
   }
 
   @override
@@ -69,7 +83,7 @@ class _WorkoutHubScreenState extends State<WorkoutHubScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Быстрый старт без шаблона — просто логируй подходы',
+              'Начни с нуля или выбери шаблон ниже',
               style: textTheme.bodyMedium?.copyWith(color: AppColors.muted),
             ),
             const SizedBox(height: 16),
@@ -91,9 +105,7 @@ class _WorkoutHubScreenState extends State<WorkoutHubScreen> {
                     style: const TextStyle(color: AppColors.muted),
                   ),
                   trailing: const Icon(Icons.play_arrow),
-                  onTap: () => context
-                      .push('/workout/active', extra: _draft)
-                      .then((_) => _loadDraft()),
+                  onTap: _continueDraft,
                 ),
               ),
             ],
@@ -101,7 +113,7 @@ class _WorkoutHubScreenState extends State<WorkoutHubScreen> {
             const QuestHubSection(),
             const SizedBox(height: 20),
             FilledButton.icon(
-              onPressed: () => _startEmptyWorkout(context),
+              onPressed: _startEmpty,
               icon: const Icon(Icons.play_arrow_rounded, size: 28),
               label: const Padding(
                 padding: EdgeInsets.symmetric(vertical: 14),
@@ -113,15 +125,6 @@ class _WorkoutHubScreenState extends State<WorkoutHubScreen> {
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.amber,
                 foregroundColor: AppColors.background,
-              ),
-            ),
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: () => _startEmptyWorkout(context),
-              icon: const Icon(Icons.bolt_outlined),
-              label: const Padding(
-                padding: EdgeInsets.symmetric(vertical: 12),
-                child: Text('Пустой быстрый старт'),
               ),
             ),
             const SizedBox(height: 32),
@@ -281,9 +284,7 @@ class _WorkoutHubScreenState extends State<WorkoutHubScreen> {
                           style: const TextStyle(color: AppColors.muted),
                         ),
                         trailing: const Icon(Icons.play_arrow),
-                        onTap: () => context
-                            .push('/workout/active', extra: t)
-                            .then((_) => _loadDraft()),
+                        onTap: () => _startTemplate(t),
                       ),
                     );
                   }).toList(),

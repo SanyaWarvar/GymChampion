@@ -4,8 +4,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/exercise_icon.dart';
+import '../../notifications/data/local_notification_service.dart';
 import '../application/active_workout_controller.dart';
 import '../data/local_workout_store.dart';
+import '../data/workout_notification_service.dart';
 import '../domain/exercise_catalog.dart';
 import '../domain/saved_workout.dart';
 import '../domain/workout_models.dart';
@@ -30,7 +32,18 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   );
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await LocalNotificationService.instance.requestPermission();
+      if (!mounted) return;
+      WorkoutNotificationService.instance.attach(_controller);
+    });
+  }
+
+  @override
   void dispose() {
+    WorkoutNotificationService.instance.detach(_controller);
     _controller.dispose();
     super.dispose();
   }
@@ -96,6 +109,8 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
         false;
     if (!confirmed || !mounted) return;
 
+    _controller.dismissRest();
+    await WorkoutNotificationService.instance.stop();
     final draft = WorkoutDraft(
       startedAt: _controller.startedAt,
       finishedAt: DateTime.now(),
@@ -122,6 +137,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
       setId: setId,
     );
     if (becameDone && mounted) {
+      _controller.startRest();
       await RestTimerSheet.show(context);
     }
   }

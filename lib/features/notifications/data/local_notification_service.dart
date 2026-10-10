@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -8,6 +9,7 @@ import 'package:timezone/timezone.dart' as tz;
 
 import '../../auth/domain/app_user.dart';
 import '../../challenges/domain/challenge.dart';
+import '../../workout/data/workout_notification_service.dart';
 
 /// Локальные напоминания только на этом устройстве (стрик / дедлайн вызова).
 class LocalNotificationService {
@@ -18,12 +20,15 @@ class LocalNotificationService {
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
 
+  FlutterLocalNotificationsPlugin get plugin => _plugin;
+
   static const _channelId = 'gym_champion_reminders';
   static const _channelName = 'Напоминания GymChampion';
   static const _streakId = 1001;
   static const _challengeIdBase = 2000;
 
   bool _ready = false;
+  bool _workoutChannelReady = false;
 
   Future<void> init() async {
     if (_ready || kIsWeb) return;
@@ -45,6 +50,8 @@ class LocalNotificationService {
     );
     await _plugin.initialize(
       settings: const InitializationSettings(android: android, iOS: ios),
+      onDidReceiveNotificationResponse: _onNotificationResponse,
+      onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
     );
 
     final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
@@ -57,8 +64,34 @@ class LocalNotificationService {
         importance: Importance.defaultImportance,
       ),
     );
+    await ensureWorkoutChannel();
 
     _ready = true;
+  }
+
+  Future<void> ensureWorkoutChannel() async {
+    if (_workoutChannelReady || kIsWeb) return;
+    final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    await androidPlugin?.createNotificationChannel(
+      const AndroidNotificationChannel(
+        WorkoutNotificationService.channelId,
+        WorkoutNotificationService.channelName,
+        description: 'Активная тренировка и таймер отдыха',
+        importance: Importance.defaultImportance,
+      ),
+    );
+    _workoutChannelReady = true;
+  }
+
+  void _onNotificationResponse(NotificationResponse response) {
+    final action = response.actionId;
+    if (action == null || action.isEmpty) return;
+    if (action == WorkoutNotificationService.actionCompleteSet ||
+        action == WorkoutNotificationService.actionToggleRest ||
+        action == WorkoutNotificationService.actionSkipRest) {
+      unawaited(WorkoutNotificationService.instance.handleAction(action));
+    }
   }
 
   Future<bool> requestPermission() async {
@@ -182,4 +215,10 @@ class LocalNotificationService {
     if (!_ready) return;
     await _plugin.cancelAll();
   }
+}
+
+@pragma('vm:entry-point')
+void notificationTapBackground(NotificationResponse response) {
+  // Background isolate: полный контроллер недоступен.
+  // Пока приложение живо, экшены идут в onDidReceiveNotificationResponse.
 }

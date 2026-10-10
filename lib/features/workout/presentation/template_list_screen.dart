@@ -5,6 +5,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/exercise_icon.dart';
 import '../data/template_repository.dart';
 import '../domain/workout_template.dart';
+import 'start_workout_guard.dart';
 
 class TemplateListScreen extends StatelessWidget {
   const TemplateListScreen({super.key});
@@ -154,7 +155,7 @@ class _TemplateTile extends StatelessWidget {
       trailing: PopupMenuButton<String>(
         onSelected: (value) async {
           if (value == 'start') {
-            context.push('/workout/active', extra: t);
+            await startWorkoutGuarded(context, template: t);
           } else if (value == 'edit') {
             context.push('/workout/templates/edit', extra: t);
           } else if (value == 'delete') {
@@ -167,7 +168,7 @@ class _TemplateTile extends StatelessWidget {
           PopupMenuItem(value: 'delete', child: Text('Удалить')),
         ],
       ),
-      onTap: () => context.push('/workout/active', extra: t),
+      onTap: () => startWorkoutGuarded(context, template: t),
     );
   }
 }

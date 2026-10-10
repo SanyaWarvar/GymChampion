@@ -6,6 +6,7 @@ import '../data/local_workout_store.dart';
 import '../domain/exercise_catalog.dart';
 import '../domain/workout_models.dart';
 import '../domain/workout_template.dart';
+import 'rest_timer_controller.dart';
 
 class ActiveWorkoutController extends ChangeNotifier {
   ActiveWorkoutController({
@@ -33,9 +34,47 @@ class ActiveWorkoutController extends ChangeNotifier {
       }
     }
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      unawaited(syncFromDisk());
       notifyListeners();
     });
-    _persist();
+    unawaited(_persist());
+  }
+
+  bool _dirty = false;
+  bool _persisting = false;
+
+  /// Подтягивает только то, что отметил lock screen / шторка (диск впереди).
+  /// Не затирает локальные addSet / правки, пока они ещё не записаны.
+  Future<void> syncFromDisk() async {
+    if (_dirty || _persisting || (_persistDebounce?.isActive ?? false)) {
+      return;
+    }
+    try {
+      final draft = await _store.load();
+      if (draft == null) return;
+      final diskDone =
+          draft.exercises.fold<int>(0, (t, e) => t + e.doneSets);
+      // Диск отстаёт или равен — память источник истины.
+      if (diskDone <= totalDoneSets) return;
+      if (_sameDonePattern(draft.exercises, _exercises)) return;
+      _exercises
+        ..clear()
+        ..addAll(draft.exercises);
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  bool _sameDonePattern(List<WorkoutExercise> a, List<WorkoutExercise> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i].id != b[i].id || a[i].sets.length != b[i].sets.length) {
+        return false;
+      }
+      for (var j = 0; j < a[i].sets.length; j++) {
+        if (a[i].sets[j].done != b[i].sets[j].done) return false;
+      }
+    }
+    return true;
   }
 
   final LocalWorkoutStore _store;
@@ -46,9 +85,51 @@ class ActiveWorkoutController extends ChangeNotifier {
   final List<WorkoutExercise> _exercises = [];
   int _idCounter = 0;
 
+  RestTimerController get rest => RestTimerController.instance;
+
   bool get fromTemplate => _fromTemplate;
 
+  bool get isResting => rest.isResting;
+  int get restTotalSeconds => rest.restTotalSeconds;
+  bool get restPaused => rest.restPaused;
+  int get restRemainingSeconds => rest.restRemainingSeconds;
+  double get restProgress => rest.restProgress;
+  String get restLabel => rest.restLabel;
+
+  void startRest({int seconds = 90}) => rest.startRest(seconds: seconds);
+  void setRestPreset(int seconds) => rest.setRestPreset(seconds);
+  void toggleRestPause() => rest.toggleRestPause();
+  void dismissRest() => rest.dismissRest();
+
   List<WorkoutExercise> get exercises => List.unmodifiable(_exercises);
+
+  /// Следующий незакрытый подход по плану (сверху вниз).
+  WorkoutPlanStep? get currentPlanStep {
+    for (final exercise in _exercises) {
+      for (var i = 0; i < exercise.sets.length; i++) {
+        final set = exercise.sets[i];
+        if (!set.done) {
+          return WorkoutPlanStep(
+            exercise: exercise,
+            set: set,
+            setIndex: i,
+            setCount: exercise.sets.length,
+          );
+        }
+      }
+    }
+    return null;
+  }
+
+  bool get planComplete =>
+      _exercises.isNotEmpty && currentPlanStep == null;
+
+  /// Закрывает следующий подход по плану. true — подход стал выполненным.
+  bool completeNextSet() {
+    final step = currentPlanStep;
+    if (step == null) return false;
+    return toggleSetDone(exerciseId: step.exercise.id, setId: step.set.id);
+  }
 
   DateTime get startedAt => _startedAt;
 
@@ -91,22 +172,44 @@ class ActiveWorkoutController extends ChangeNotifier {
 
   String _nextId(String prefix) => '${prefix}_${_idCounter++}';
 
-  void _schedulePersist() {
+  void _schedulePersist({bool immediate = false}) {
+    _dirty = true;
     _persistDebounce?.cancel();
-    _persistDebounce = Timer(const Duration(milliseconds: 350), _persist);
+    if (immediate) {
+      unawaited(_persist());
+      return;
+    }
+    _persistDebounce = Timer(const Duration(milliseconds: 350), () {
+      unawaited(_persist());
+    });
   }
 
   Future<void> _persist() async {
+    _persistDebounce?.cancel();
+    _persisting = true;
     try {
+      // Снимок на момент старта записи — не потерять правки mid-await.
+      final snapshot = List<WorkoutExercise>.from(_exercises);
       await _store.save(
         startedAt: _startedAt,
         fromTemplate: _fromTemplate,
-        exercises: _exercises,
+        exercises: snapshot,
       );
-    } catch (_) {}
+      // Если за время save снова меняли — остаётся dirty через новый schedule.
+      if (!(_persistDebounce?.isActive ?? false)) {
+        _dirty = false;
+      }
+    } catch (_) {
+      // Оставим dirty, чтобы syncFromDisk не откатил UI.
+    } finally {
+      _persisting = false;
+    }
   }
 
-  Future<void> clearLocalDraft() => _store.clear();
+  Future<void> clearLocalDraft() async {
+    rest.dismissRest();
+    await _store.clear();
+  }
 
   void addExercise(
     String name, {
@@ -140,13 +243,13 @@ class ActiveWorkoutController extends ChangeNotifier {
       ),
     );
     notifyListeners();
-    _schedulePersist();
+    _schedulePersist(immediate: true);
   }
 
   void removeExercise(String exerciseId) {
     _exercises.removeWhere((e) => e.id == exerciseId);
     notifyListeners();
-    _schedulePersist();
+    _schedulePersist(immediate: true);
   }
 
   void addSet(String exerciseId) {
@@ -165,7 +268,7 @@ class ActiveWorkoutController extends ChangeNotifier {
       ],
     );
     notifyListeners();
-    _schedulePersist();
+    _schedulePersist(immediate: true);
   }
 
   void updateSet({
@@ -203,7 +306,7 @@ class ActiveWorkoutController extends ChangeNotifier {
     }).toList();
     _exercises[exIndex] = exercise.copyWith(sets: sets);
     notifyListeners();
-    _schedulePersist();
+    _schedulePersist(immediate: true);
     return becameDone;
   }
 
@@ -219,7 +322,7 @@ class ActiveWorkoutController extends ChangeNotifier {
       sets: exercise.sets.where((s) => s.id != setId).toList(),
     );
     notifyListeners();
-    _schedulePersist();
+    _schedulePersist(immediate: true);
   }
 
   @override
@@ -227,5 +330,50 @@ class ActiveWorkoutController extends ChangeNotifier {
     _ticker?.cancel();
     _persistDebounce?.cancel();
     super.dispose();
+  }
+}
+
+@immutable
+class WorkoutPlanStep {
+  const WorkoutPlanStep({
+    required this.exercise,
+    required this.set,
+    required this.setIndex,
+    required this.setCount,
+  });
+
+  final WorkoutExercise exercise;
+  final WorkoutSet set;
+  final int setIndex;
+  final int setCount;
+
+  String get setLabel => 'Подход ${setIndex + 1}/$setCount';
+
+  String get loadLabel {
+    final catalog = ExerciseCatalog.lookup(
+      exerciseId: exercise.exerciseId,
+      name: exercise.name,
+    );
+    if (catalog?.isRun == true) {
+      return ExerciseCatalog.formatSet(
+        weightKg: set.weightKg,
+        qty: set.reps,
+        exerciseId: exercise.exerciseId,
+        name: exercise.name,
+      );
+    }
+    if (catalog?.isHold == true) {
+      return ExerciseCatalog.formatSet(
+        weightKg: set.weightKg,
+        qty: set.reps,
+        exerciseId: exercise.exerciseId,
+        name: exercise.name,
+      );
+    }
+    if (set.weightKg <= 0) return '${set.reps} повт.';
+    final kg = set.weightKg == set.weightKg.roundToDouble()
+        ? '${set.weightKg.round()}'
+        : '${set.weightKg}';
+    return '$kg кг × ${set.reps}';
   }
 }
