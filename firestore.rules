@@ -1,0 +1,79 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null && request.auth.uid == userId;
+      allow delete: if false;
+
+      match /workouts/{workoutId} {
+        allow read: if request.auth != null && (
+          request.auth.uid == userId ||
+          resource.data.isPrivate != true
+        );
+        allow create: if request.auth != null && request.auth.uid == userId;
+        allow update, delete: if request.auth != null && request.auth.uid == userId;
+      }
+
+      match /templates/{templateId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      match /achievements/{achievementId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow create, update: if request.auth != null && request.auth.uid == userId;
+        allow delete: if false;
+      }
+
+      match /rankChecks/{checkId} {
+        allow read, create: if request.auth != null && request.auth.uid == userId;
+        allow update, delete: if false;
+      }
+
+      match /questBoards/{boardId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      match /notifications/{notifId} {
+        allow read, update, delete: if request.auth != null
+          && request.auth.uid == userId;
+        allow create: if request.auth != null
+          && request.resource.data.actorId == request.auth.uid;
+      }
+    }
+
+    match /feed/{postId} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null;
+      allow delete: if request.auth != null &&
+        request.auth.uid == resource.data.userId;
+
+      match /comments/{commentId} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null
+          && request.resource.data.userId == request.auth.uid;
+        allow update, delete: if request.auth != null
+          && request.auth.uid == resource.data.userId;
+      }
+    }
+
+    match /challenges/{challengeId} {
+      allow read: if request.auth != null
+        && request.auth.uid in resource.data.participantIds;
+      allow create: if request.auth != null
+        && request.auth.uid == request.resource.data.challengerId;
+      allow update: if request.auth != null
+        && request.auth.uid in resource.data.participantIds;
+      allow delete: if false;
+    }
+
+    match /group_challenges/{challengeId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.auth.uid == request.resource.data.creatorId;
+      allow update: if request.auth != null;
+      allow delete: if false;
+    }
+  }
+}

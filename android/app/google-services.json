@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "217193431849",
+    "project_id": "gymchampion-60f6d",
+    "storage_bucket": "gymchampion-60f6d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:217193431849:android:465b3dc39da9ec7917ad38",
+        "android_client_info": {
+          "package_name": "com.gymchampion.gym_champion"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB2U7VIYzARh8Z58BenXcWUyK1ozoe-g8c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
