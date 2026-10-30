@@ -299,6 +299,9 @@ Future<void> initWorkoutMediaService() async {
         androidStopForegroundOnPause: false,
         androidNotificationIcon: 'drawable/ic_stat_workout',
         androidShowNotificationBadge: false,
+        // Кнопки на lock screen — без открытия приложения.
+        androidNotificationClickStartsActivity: false,
+        androidResumeOnClick: false,
         artDownscaleWidth: 256,
         artDownscaleHeight: 256,
       ),

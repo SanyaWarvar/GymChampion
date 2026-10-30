@@ -43,7 +43,9 @@ class GroupChallenge {
       ChallengeMetric.xp => '${value.round()} XP',
       ChallengeMetric.workouts => '${value.round()} трен.',
       ChallengeMetric.volume => '${value.round()} кг',
-      ChallengeMetric.run => '${value == value.roundToDouble() ? value.round() : value.toStringAsFixed(1)} км',
+      ChallengeMetric.run =>
+        '${value == value.roundToDouble() ? value.round() : value.toStringAsFixed(1)} км',
+      ChallengeMetric.steps => '${value.round()} шагов',
     };
   }
 

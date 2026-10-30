@@ -4,11 +4,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../domain/app_notification.dart';
 
 class NotificationRepository {
-  NotificationRepository({
-    FirebaseAuth? auth,
-    FirebaseFirestore? firestore,
-  })  : _auth = auth ?? FirebaseAuth.instance,
-        _firestore = firestore ?? FirebaseFirestore.instance;
+  NotificationRepository({FirebaseAuth? auth, FirebaseFirestore? firestore})
+    : _auth = auth ?? FirebaseAuth.instance,
+      _firestore = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseAuth _auth;
   final FirebaseFirestore _firestore;
@@ -51,7 +49,10 @@ class NotificationRepository {
   Future<void> markAllRead() async {
     final uid = _uid;
     if (uid == null) return;
-    final unread = await _inbox(uid).where('read', isEqualTo: false).limit(80).get();
+    final unread = await _inbox(uid)
+        .where('read', isEqualTo: false)
+        .limit(80)
+        .get();
     if (unread.docs.isEmpty) return;
     final batch = _firestore.batch();
     for (final doc in unread.docs) {
@@ -93,7 +94,10 @@ class NotificationRepository {
     await _inbox(recipientId).add(notif.toCreateMap());
   }
 
-  Future<bool> _recipientAllows(String recipientId, AppNotificationType type) async {
+  Future<bool> _recipientAllows(
+    String recipientId,
+    AppNotificationType type,
+  ) async {
     final snap = await _firestore.collection('users').doc(recipientId).get();
     final data = snap.data() ?? {};
     return switch (type) {
@@ -103,9 +107,9 @@ class NotificationRepository {
       AppNotificationType.groupLead ||
       AppNotificationType.groupGoal =>
         data['notifyChallenges'] as bool? ?? true,
-      AppNotificationType.overtaken =>
-        data['notifyOvertaken'] as bool? ?? true,
+      AppNotificationType.overtaken => data['notifyOvertaken'] as bool? ?? true,
       AppNotificationType.season => data['notifySeason'] as bool? ?? true,
+      AppNotificationType.comment => data['notifyComments'] as bool? ?? true,
     };
   }
 }

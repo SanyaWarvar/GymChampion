@@ -12,9 +12,9 @@ class AuthRepository {
     FirebaseAuth? auth,
     FirebaseFirestore? firestore,
     FirebaseStorage? storage,
-  })  : _auth = auth ?? FirebaseAuth.instance,
-        _firestore = firestore ?? FirebaseFirestore.instance,
-        _storage = storage ?? FirebaseStorage.instance;
+  }) : _auth = auth ?? FirebaseAuth.instance,
+       _firestore = firestore ?? FirebaseFirestore.instance,
+       _storage = storage ?? FirebaseStorage.instance;
 
   final FirebaseAuth _auth;
   final FirebaseFirestore _firestore;
@@ -55,6 +55,10 @@ class AuthRepository {
     return profile;
   }
 
+  Future<void> sendPasswordResetEmail(String email) async {
+    await _auth.sendPasswordResetEmail(email: email.trim());
+  }
+
   Future<AppUser?> fetchProfile(String uid) async {
     final snap = await _users.doc(uid).get();
     if (!snap.exists || snap.data() == null) return null;
@@ -75,17 +79,17 @@ class AuthRepository {
     }
     final name = displayName.trim();
     await user.updateDisplayName(name);
-    await _users.doc(user.uid).set(
-      {
-        'displayName': name,
-        'email': user.email,
-        'updatedAt': FieldValue.serverTimestamp(),
-      },
-      SetOptions(merge: true),
-    );
+    await _users.doc(user.uid).set({
+      'displayName': name,
+      'email': user.email,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
   }
 
-  Future<String> uploadAvatar(Uint8List bytes, {String contentType = 'image/jpeg'}) async {
+  Future<String> uploadAvatar(
+    Uint8List bytes, {
+    String contentType = 'image/jpeg',
+  }) async {
     final user = _auth.currentUser;
     if (user == null) {
       throw StateError('Нет авторизованного пользователя');
@@ -93,10 +97,7 @@ class AuthRepository {
     var url = '';
     try {
       final ref = _storage.ref('users/${user.uid}/avatar.jpg');
-      await ref.putData(
-        bytes,
-        SettableMetadata(contentType: contentType),
-      );
+      await ref.putData(bytes, SettableMetadata(contentType: contentType));
       url = await ref.getDownloadURL();
     } catch (_) {
       final encoded = base64Encode(bytes);
@@ -134,6 +135,7 @@ class AuthRepository {
     required bool notifyOvertaken,
     required bool notifySeason,
     required bool notifyChallenges,
+    required bool notifyComments,
     required bool notifyStreakReminder,
     required bool notifyChallengeDeadline,
   }) async {
@@ -143,6 +145,7 @@ class AuthRepository {
       'notifyOvertaken': notifyOvertaken,
       'notifySeason': notifySeason,
       'notifyChallenges': notifyChallenges,
+      'notifyComments': notifyComments,
       'notifyStreakReminder': notifyStreakReminder,
       'notifyChallengeDeadline': notifyChallengeDeadline,
       'updatedAt': FieldValue.serverTimestamp(),
@@ -186,6 +189,10 @@ class AuthRepository {
           return 'Пароль слишком слабый (минимум 6 символов)';
         case 'network-request-failed':
           return 'Нет сети. Проверь интернет';
+        case 'too-many-requests':
+          return 'Слишком много попыток. Подожди немного';
+        case 'missing-email':
+          return 'Введи email';
         default:
           return error.message ?? 'Ошибка авторизации';
       }

@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../auth/domain/app_user.dart';
 import '../../notifications/data/notification_repository.dart';
 import '../../notifications/domain/app_notification.dart';
+import '../../steps/data/steps_service.dart';
 import '../../workout/domain/saved_workout.dart';
 import '../domain/challenge.dart';
 import '../domain/group_challenge.dart';
@@ -190,6 +191,8 @@ class ChallengeRepository {
         ChallengeMetric.workouts => 1.0,
         ChallengeMetric.xp => xpEarned.toDouble(),
         ChallengeMetric.run => workout.runKm,
+        // Шаги синкаются отдельно из Health Connect.
+        ChallengeMetric.steps => 0.0,
       };
       if (delta <= 0) continue;
       batch.update(doc.reference, {field: FieldValue.increment(delta)});
@@ -384,6 +387,7 @@ class ChallengeRepository {
         ChallengeMetric.workouts => 1.0,
         ChallengeMetric.xp => xpEarned.toDouble(),
         ChallengeMetric.run => workout.runKm,
+        ChallengeMetric.steps => 0.0,
       };
       if (delta <= 0) continue;
 
@@ -446,6 +450,71 @@ class ChallengeRepository {
         } catch (_) {}
       }
     }
+  }
+
+  /// Абсолютный синк шагов за период вызова (не increment).
+  Future<void> syncStepsChallenges({
+    required String userId,
+    StepsService? steps,
+  }) async {
+    final stepsSvc = steps ?? StepsService.instance;
+    if (!await stepsSvc.hasPermissions()) return;
+
+    final now = DateTime.now();
+    final duelSnap = await _challenges
+        .where('participantIds', arrayContains: userId)
+        .get();
+    final groupSnap = await _groupChallenges
+        .where('participantIds', arrayContains: userId)
+        .get();
+
+    final batch = _firestore.batch();
+    var writes = 0;
+
+    for (final doc in duelSnap.docs) {
+      final data = doc.data();
+      if (data['kind'] == 'group') continue;
+      final c = Challenge.fromMap(doc.id, data);
+      if (c.metric != ChallengeMetric.steps) continue;
+      if (c.status != ChallengeStatus.active) continue;
+      if (now.isAfter(c.endsAt)) continue;
+      final end = now.isBefore(c.endsAt) ? now : c.endsAt;
+      final from = c.startsAt.isAfter(end) ? end : c.startsAt;
+      final total =
+          (await stepsSvc.stepsInRange(from, end)).toDouble();
+      final isChallenger = c.challengerId == userId;
+      final field = isChallenger ? 'challengerScore' : 'opponentScore';
+      final prev = isChallenger ? c.challengerScore : c.opponentScore;
+      if ((prev - total).abs() < 0.5) continue;
+      batch.update(doc.reference, {field: total});
+      writes++;
+    }
+
+    for (final doc in groupSnap.docs) {
+      final c = GroupChallenge.fromMap(doc.id, doc.data());
+      if (c.metric != ChallengeMetric.steps) continue;
+      if (c.status != GroupChallengeStatus.active) continue;
+      if (now.isAfter(c.endsAt) || c.reached) continue;
+      final end = now.isBefore(c.endsAt) ? now : c.endsAt;
+      final from = c.startsAt.isAfter(end) ? end : c.startsAt;
+      final total =
+          (await stepsSvc.stepsInRange(from, end)).toDouble();
+      final prev = c.scores[userId] ?? 0;
+      if ((prev - total).abs() < 0.5) continue;
+      final nextScores = Map<String, double>.from(c.scores);
+      nextScores[userId] = total;
+      final nextTotal =
+          nextScores.values.fold<double>(0, (a, b) => a + b);
+      batch.update(doc.reference, {
+        'scores.$userId': total,
+        'totalScore': nextTotal,
+        if (nextTotal >= c.target)
+          'status': GroupChallengeStatus.completed.name,
+      });
+      writes++;
+    }
+
+    if (writes > 0) await batch.commit();
   }
 
   String? _leaderId(Map<String, double> scores) {

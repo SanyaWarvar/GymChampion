@@ -9,6 +9,7 @@ import '../../rank/domain/xp_rules.dart';
 import '../../rank/presentation/rank_badge.dart';
 import '../data/feed_repository.dart';
 import '../domain/feed_post.dart';
+import 'feed_exercise_list.dart';
 
 class FeedScreen extends StatelessWidget {
   const FeedScreen({super.key, required this.auth});
@@ -92,10 +93,8 @@ class FeedScreen extends StatelessWidget {
                 dateLabel: dateFormat.format(post.createdAt.toLocal()),
                 onOpen: () => context.push('/feed/${post.id}'),
                 onUser: () => context.push('/friends/${post.userId}'),
-                onReact: (reaction) => repo.setReaction(
-                  postId: post.id,
-                  reaction: reaction,
-                ),
+                onReact: (reaction) =>
+                    repo.setReaction(postId: post.id, reaction: reaction),
               );
             },
           );
@@ -184,6 +183,19 @@ class _FeedCard extends StatelessWidget {
                     ),
                   ),
                 ],
+                const SizedBox(height: 8),
+                WorkoutPostExercises(
+                  post: post,
+                  viewerId: myUid,
+                  compact: true,
+                ),
+              ],
+              if (post.type == FeedPostType.stepsDay) ...[
+                const SizedBox(height: 12),
+                Text(
+                  '${post.steps} шагов · +${post.xpEarned} XP',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
               ],
               const SizedBox(height: 12),
               Row(
@@ -199,12 +211,18 @@ class _FeedCard extends StatelessWidget {
                       ),
                     ),
                   const Spacer(),
-                  Icon(Icons.chat_bubble_outline,
-                      size: 16, color: AppColors.muted),
+                  Icon(
+                    Icons.chat_bubble_outline,
+                    size: 16,
+                    color: AppColors.muted,
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     '${post.commentCount}',
-                    style: const TextStyle(color: AppColors.muted, fontSize: 13),
+                    style: const TextStyle(
+                      color: AppColors.muted,
+                      fontSize: 13,
+                    ),
                   ),
                 ],
               ),

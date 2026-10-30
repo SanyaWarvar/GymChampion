@@ -35,6 +35,13 @@ extension MuscleGroupX on MuscleGroup {
         MuscleGroup.fullBody => 'assets/icons/muscles/full_body.jpg',
         MuscleGroup.cardio => 'assets/icons/muscles/cardio.jpg',
       };
+
+  static MuscleGroup parse(String? raw) {
+    for (final group in MuscleGroup.values) {
+      if (group.name == raw) return group;
+    }
+    return MuscleGroup.fullBody;
+  }
 }
 
 @immutable
@@ -163,9 +170,10 @@ abstract final class ExerciseCatalog {
   ];
 
   static CatalogExercise? lookup({String? exerciseId, String? name}) {
-    if (exerciseId != null) {
+    if (exerciseId != null && exerciseId.isNotEmpty) {
       final match = byId(exerciseId);
       if (match != null) return match;
+      if (exerciseId.startsWith('custom_')) return null;
     }
     if (name != null) return byName(name);
     return null;
@@ -295,6 +303,7 @@ abstract final class ExerciseCatalog {
 
   /// Путь к иконке по id каталога или названию. null — нет в каталоге.
   static String? iconAssetFor({String? exerciseId, String? name}) {
+    if (exerciseId != null && exerciseId.startsWith('custom_')) return null;
     if (exerciseId != null) {
       final byIdMatch = byId(exerciseId);
       if (byIdMatch != null) return byIdMatch.iconAsset;

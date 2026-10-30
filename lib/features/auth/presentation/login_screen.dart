@@ -39,6 +39,27 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _resetPassword() async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty || !email.contains('@')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Сначала введи email')),
+      );
+      return;
+    }
+    final ok = await widget.auth.sendPasswordReset(email);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          ok
+              ? 'Письмо для сброса пароля отправлено на $email'
+              : (widget.auth.errorMessage ?? 'Не удалось отправить письмо'),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
@@ -120,7 +141,14 @@ class _LoginScreenState extends State<LoginScreen> {
                             return null;
                           },
                         ),
-                        const SizedBox(height: 24),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed: busy ? null : _resetPassword,
+                            child: const Text('Забыли пароль?'),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
                         FilledButton(
                           onPressed: busy ? null : _submit,
                           child: busy

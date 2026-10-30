@@ -23,13 +23,7 @@ class ActiveWorkoutController extends ChangeNotifier {
       _fromTemplate = template != null;
       if (template != null) {
         for (final item in template.exercises) {
-          addExercise(
-            item.name,
-            exerciseId: item.exerciseId,
-            setsCount: item.targetSets,
-            weightKg: item.targetWeightKg,
-            reps: item.targetReps,
-          );
+          addExerciseFromTemplate(item);
         }
       }
     }
@@ -209,6 +203,35 @@ class ActiveWorkoutController extends ChangeNotifier {
   Future<void> clearLocalDraft() async {
     rest.dismissRest();
     await _store.clear();
+  }
+
+  void addExerciseFromTemplate(TemplateExercise item) {
+    final trimmed = item.name.trim();
+    if (trimmed.isEmpty) return;
+    final catalog = ExerciseCatalog.lookup(
+      exerciseId: item.exerciseId,
+      name: trimmed,
+    );
+    final targets = item.resolvedSets;
+    _exercises.add(
+      WorkoutExercise(
+        id: _nextId('ex'),
+        name: trimmed,
+        exerciseId: item.exerciseId,
+        sets: [
+          for (final t in targets)
+            WorkoutSet(
+              id: _nextId('set'),
+              weightKg: t.weightKg > 0
+                  ? t.weightKg
+                  : (catalog?.defaultDistanceKm ?? 0),
+              reps: t.reps > 0 ? t.reps : (catalog?.defaultQty ?? 0),
+            ),
+        ],
+      ),
+    );
+    notifyListeners();
+    _schedulePersist(immediate: true);
   }
 
   void addExercise(

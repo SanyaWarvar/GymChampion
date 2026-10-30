@@ -20,40 +20,45 @@ class _NotificationsInboxScreenState extends State<NotificationsInboxScreen> {
   ({IconData icon, Color color, String label}) _meta(AppNotificationType type) {
     return switch (type) {
       AppNotificationType.challengeProgress => (
-          icon: Icons.bolt_outlined,
-          color: AppColors.amber,
-          label: 'Вызов',
-        ),
+        icon: Icons.bolt_outlined,
+        color: AppColors.amber,
+        label: 'Вызов',
+      ),
       AppNotificationType.challengeInvite => (
-          icon: Icons.sports_kabaddi_outlined,
-          color: const Color(0xFF7C9CFF),
-          label: 'Приглашение',
-        ),
+        icon: Icons.sports_kabaddi_outlined,
+        color: const Color(0xFF7C9CFF),
+        label: 'Приглашение',
+      ),
       AppNotificationType.challengeResult => (
-          icon: Icons.emoji_events_outlined,
-          color: const Color(0xFFFFB74D),
-          label: 'Итог',
-        ),
+        icon: Icons.emoji_events_outlined,
+        color: const Color(0xFFFFB74D),
+        label: 'Итог',
+      ),
       AppNotificationType.groupLead => (
-          icon: Icons.military_tech_outlined,
-          color: const Color(0xFF80CBC4),
-          label: 'Лидер',
-        ),
+        icon: Icons.military_tech_outlined,
+        color: const Color(0xFF80CBC4),
+        label: 'Лидер',
+      ),
       AppNotificationType.groupGoal => (
-          icon: Icons.groups_outlined,
-          color: const Color(0xFF80CBC4),
-          label: 'Общая цель',
-        ),
+        icon: Icons.groups_outlined,
+        color: const Color(0xFF80CBC4),
+        label: 'Общая цель',
+      ),
       AppNotificationType.overtaken => (
-          icon: Icons.trending_up,
-          color: const Color(0xFFFF8A80),
-          label: 'Рейтинг',
-        ),
+        icon: Icons.trending_up,
+        color: const Color(0xFFFF8A80),
+        label: 'Рейтинг',
+      ),
       AppNotificationType.season => (
-          icon: Icons.calendar_month_outlined,
-          color: const Color(0xFFCE93D8),
-          label: 'Сезон',
-        ),
+        icon: Icons.calendar_month_outlined,
+        color: const Color(0xFFCE93D8),
+        label: 'Сезон',
+      ),
+      AppNotificationType.comment => (
+        icon: Icons.chat_bubble_outline,
+        color: AppColors.amber,
+        label: 'Комментарий',
+      ),
     };
   }
 
@@ -99,9 +104,7 @@ class _NotificationsInboxScreenState extends State<NotificationsInboxScreen> {
     for (final n in items) {
       map.putIfAbsent(_dayKey(n.createdAt), () => []).add(n);
     }
-    return [
-      for (final e in map.entries) (header: e.key, items: e.value),
-    ];
+    return [for (final e in map.entries) (header: e.key, items: e.value)];
   }
 
   @override
@@ -145,8 +148,7 @@ class _NotificationsInboxScreenState extends State<NotificationsInboxScreen> {
             return const _EmptyState(
               icon: Icons.notifications_none_rounded,
               title: 'Пока тихо',
-              subtitle:
-                  'Прогресс в вызовах, обгоны в рейтинге\nи итоги сезона появятся здесь.',
+              subtitle: 'Комментарии, прогресс в вызовах,\nобгоны в рейтинге и итоги сезона появятся здесь.',
             );
           }
 
@@ -291,8 +293,9 @@ class _NotificationTile extends StatelessWidget {
                             Text(
                               n.title,
                               style: TextStyle(
-                                fontWeight:
-                                    unread ? FontWeight.w800 : FontWeight.w600,
+                                fontWeight: unread
+                                    ? FontWeight.w800
+                                    : FontWeight.w600,
                                 fontSize: 15,
                                 height: 1.25,
                               ),
@@ -315,7 +318,9 @@ class _NotificationTile extends StatelessWidget {
                               Text(
                                 n.actorName,
                                 style: TextStyle(
-                                  color: AppColors.onDark.withValues(alpha: 0.55),
+                                  color: AppColors.onDark.withValues(
+                                    alpha: 0.55,
+                                  ),
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -367,19 +372,13 @@ class _EmptyState extends StatelessWidget {
             const SizedBox(height: 20),
             Text(
               title,
-              style: const TextStyle(
-                fontWeight: FontWeight.w800,
-                fontSize: 18,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
             ),
             const SizedBox(height: 8),
             Text(
               subtitle,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: AppColors.muted,
-                height: 1.4,
-              ),
+              style: const TextStyle(color: AppColors.muted, height: 1.4),
             ),
           ],
         ),

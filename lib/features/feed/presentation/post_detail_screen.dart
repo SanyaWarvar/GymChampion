@@ -7,13 +7,10 @@ import '../../auth/application/auth_controller.dart';
 import '../../rank/domain/xp_rules.dart';
 import '../data/feed_repository.dart';
 import '../domain/feed_post.dart';
+import 'feed_exercise_list.dart';
 
 class PostDetailScreen extends StatefulWidget {
-  const PostDetailScreen({
-    super.key,
-    required this.auth,
-    required this.postId,
-  });
+  const PostDetailScreen({super.key, required this.auth, required this.postId});
 
   final AuthController auth;
   final String postId;
@@ -95,14 +92,34 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                       const SizedBox(height: 8),
                       Text(
                         post.workoutStatsLine(includeXp: false),
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w700),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         '+${post.xpEarned} XP'
                         '${post.rankId != null ? ' · ${XpRules.titleForRank(post.rankId!)}' : ''}',
+                        style: const TextStyle(color: AppColors.amber),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Упражнения',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w800),
+                      ),
+                      const SizedBox(height: 8),
+                      WorkoutPostExercises(post: post, viewerId: myUid),
+                    ],
+                    if (post.type == FeedPostType.stepsDay) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        '${post.steps} шагов',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '+${post.xpEarned} XP',
                         style: const TextStyle(color: AppColors.amber),
                       ),
                     ],
@@ -114,8 +131,10 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                         final count = post.reactionCount(reaction);
                         return FilterChip(
                           selected: selected,
-                          label: Text('${reaction.emoji} ${reaction.label}'
-                              '${count > 0 ? ' · $count' : ''}'),
+                          label: Text(
+                            '${reaction.emoji} ${reaction.label}'
+                            '${count > 0 ? ' · $count' : ''}',
+                          ),
                           onSelected: (_) => _repo.setReaction(
                             postId: post.id,
                             reaction: reaction,
@@ -126,9 +145,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                     const SizedBox(height: 20),
                     Text(
                       'Комментарии',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w800,
-                          ),
+                      style: Theme.of(context).textTheme.titleMedium
+                          ?.copyWith(fontWeight: FontWeight.w800),
                     ),
                     const SizedBox(height: 8),
                     StreamBuilder<List<FeedComment>>(
@@ -205,7 +223,9 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                             ? const SizedBox(
                                 width: 18,
                                 height: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
                             : const Icon(Icons.send),
                       ),

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -6,7 +8,7 @@ import '../../auth/application/auth_controller.dart';
 import '../data/challenge_repository.dart';
 import '../domain/challenge.dart';
 
-class ChallengeDetailScreen extends StatelessWidget {
+class ChallengeDetailScreen extends StatefulWidget {
   const ChallengeDetailScreen({
     super.key,
     required this.auth,
@@ -17,15 +19,30 @@ class ChallengeDetailScreen extends StatelessWidget {
   final String challengeId;
 
   @override
+  State<ChallengeDetailScreen> createState() => _ChallengeDetailScreenState();
+}
+
+class _ChallengeDetailScreenState extends State<ChallengeDetailScreen> {
+  final _repo = ChallengeRepository();
+
+  @override
+  void initState() {
+    super.initState();
+    final uid = widget.auth.profile?.uid;
+    if (uid != null) {
+      unawaited(_repo.syncStepsChallenges(userId: uid));
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final repo = ChallengeRepository();
     final dateFormat = DateFormat('d MMM HH:mm');
-    final myUid = auth.profile?.uid ?? '';
+    final myUid = widget.auth.profile?.uid ?? '';
 
     return Scaffold(
       appBar: AppBar(title: const Text('Вызов')),
       body: StreamBuilder<Challenge?>(
-        stream: repo.watchChallenge(challengeId),
+        stream: _repo.watchChallenge(widget.challengeId),
         builder: (context, snapshot) {
           if (!snapshot.hasData &&
               snapshot.connectionState != ConnectionState.done) {
@@ -44,74 +61,89 @@ class ChallengeDetailScreen extends StatelessWidget {
           final theirName =
               myUid == c.challengerId ? c.opponentName : c.challengerName;
 
-          return ListView(
-            padding: const EdgeInsets.all(20),
-            children: [
-              Text(
-                c.titleFor(myUid),
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '${c.metric.label} · до ${dateFormat.format(c.endsAt.toLocal())}',
-                style: const TextStyle(color: AppColors.muted),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: _ScoreBox(
-                      label: 'Ты',
-                      value: myScore.round().toString(),
-                      highlight: myScore >= theirScore,
-                    ),
-                  ),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 12),
-                    child: Text(':', style: TextStyle(fontSize: 28)),
-                  ),
-                  Expanded(
-                    child: _ScoreBox(
-                      label: theirName,
-                      value: theirScore.round().toString(),
-                      highlight: theirScore > myScore,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'Статус: ${c.status.name}',
-                style: const TextStyle(color: AppColors.muted),
-              ),
-              if (c.status == ChallengeStatus.pending && amOpponent) ...[
-                const SizedBox(height: 20),
-                FilledButton(
-                  onPressed: () => repo.accept(c.id),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.amber,
-                    foregroundColor: AppColors.background,
-                    minimumSize: const Size.fromHeight(48),
-                  ),
-                  child: const Text('Принять'),
+          return RefreshIndicator(
+            onRefresh: () async {
+              if (myUid.isNotEmpty) {
+                await _repo.syncStepsChallenges(userId: myUid);
+              }
+            },
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(20),
+              children: [
+                Text(
+                  c.titleFor(myUid),
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
                 ),
                 const SizedBox(height: 8),
-                OutlinedButton(
-                  onPressed: () => repo.decline(c.id),
-                  child: const Text('Отклонить'),
+                Text(
+                  '${c.metric.label} · до ${dateFormat.format(c.endsAt.toLocal())}',
+                  style: const TextStyle(color: AppColors.muted),
                 ),
-              ],
-              if (c.status == ChallengeStatus.pending &&
-                  myUid == c.challengerId) ...[
-                const SizedBox(height: 16),
-                const Text(
-                  'Ждём ответа соперника',
-                  style: TextStyle(color: AppColors.muted),
+                if (c.metric == ChallengeMetric.steps) ...[
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Счёт шагов подтягивается из Health Connect. Потяни вниз, чтобы обновить.',
+                    style: TextStyle(color: AppColors.muted, fontSize: 13),
+                  ),
+                ],
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _ScoreBox(
+                        label: 'Ты',
+                        value: myScore.round().toString(),
+                        highlight: myScore >= theirScore,
+                      ),
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 12),
+                      child: Text(':', style: TextStyle(fontSize: 28)),
+                    ),
+                    Expanded(
+                      child: _ScoreBox(
+                        label: theirName,
+                        value: theirScore.round().toString(),
+                        highlight: theirScore > myScore,
+                      ),
+                    ),
+                  ],
                 ),
+                const SizedBox(height: 24),
+                Text(
+                  'Статус: ${c.status.name}',
+                  style: const TextStyle(color: AppColors.muted),
+                ),
+                if (c.status == ChallengeStatus.pending && amOpponent) ...[
+                  const SizedBox(height: 20),
+                  FilledButton(
+                    onPressed: () => _repo.accept(c.id),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.amber,
+                      foregroundColor: AppColors.background,
+                      minimumSize: const Size.fromHeight(48),
+                    ),
+                    child: const Text('Принять'),
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton(
+                    onPressed: () => _repo.decline(c.id),
+                    child: const Text('Отклонить'),
+                  ),
+                ],
+                if (c.status == ChallengeStatus.pending &&
+                    myUid == c.challengerId) ...[
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Ждём ответа соперника',
+                    style: TextStyle(color: AppColors.muted),
+                  ),
+                ],
               ],
-            ],
+            ),
           );
         },
       ),

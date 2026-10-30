@@ -21,6 +21,7 @@ class AppUser {
     this.notifyOvertaken = true,
     this.notifySeason = true,
     this.notifyChallenges = true,
+    this.notifyComments = true,
     this.notifyStreakReminder = true,
     this.notifyChallengeDeadline = true,
     this.lastRankCheckAt,
@@ -50,6 +51,7 @@ class AppUser {
   final bool notifyOvertaken;
   final bool notifySeason;
   final bool notifyChallenges;
+  final bool notifyComments;
   final bool notifyStreakReminder;
   final bool notifyChallengeDeadline;
   final DateTime? lastRankCheckAt;
@@ -89,11 +91,12 @@ class AppUser {
       notifyOvertaken: data['notifyOvertaken'] as bool? ?? true,
       notifySeason: data['notifySeason'] as bool? ?? true,
       notifyChallenges: data['notifyChallenges'] as bool? ?? true,
+      notifyComments: data['notifyComments'] as bool? ?? true,
       notifyStreakReminder: data['notifyStreakReminder'] as bool? ?? true,
-      notifyChallengeDeadline:
-          data['notifyChallengeDeadline'] as bool? ?? true,
-      lastRankCheckAt:
-          DateTime.tryParse(data['lastRankCheckAt'] as String? ?? ''),
+      notifyChallengeDeadline: data['notifyChallengeDeadline'] as bool? ?? true,
+      lastRankCheckAt: DateTime.tryParse(
+        data['lastRankCheckAt'] as String? ?? '',
+      ),
       masteryBests: MasteryBoards.readFromUserData(data),
       masteryBackfilled: data['masteryBackfilled'] as bool? ?? false,
       streakDays: (data['streakDays'] as num?)?.toInt() ?? 0,
@@ -122,6 +125,7 @@ class AppUser {
       'notifyOvertaken': notifyOvertaken,
       'notifySeason': notifySeason,
       'notifyChallenges': notifyChallenges,
+      'notifyComments': notifyComments,
       'notifyStreakReminder': notifyStreakReminder,
       'notifyChallengeDeadline': notifyChallengeDeadline,
       if (lastRankCheckAt != null)
@@ -162,6 +166,7 @@ class AppUser {
     bool? notifyOvertaken,
     bool? notifySeason,
     bool? notifyChallenges,
+    bool? notifyComments,
     bool? notifyStreakReminder,
     bool? notifyChallengeDeadline,
     DateTime? lastRankCheckAt,
@@ -192,8 +197,8 @@ class AppUser {
       notifyOvertaken: notifyOvertaken ?? this.notifyOvertaken,
       notifySeason: notifySeason ?? this.notifySeason,
       notifyChallenges: notifyChallenges ?? this.notifyChallenges,
-      notifyStreakReminder:
-          notifyStreakReminder ?? this.notifyStreakReminder,
+      notifyComments: notifyComments ?? this.notifyComments,
+      notifyStreakReminder: notifyStreakReminder ?? this.notifyStreakReminder,
       notifyChallengeDeadline:
           notifyChallengeDeadline ?? this.notifyChallengeDeadline,
       lastRankCheckAt: lastRankCheckAt ?? this.lastRankCheckAt,

@@ -26,6 +26,7 @@ class _NotificationsSettingsScreenState
   late bool _overtaken;
   late bool _season;
   late bool _challenges;
+  late bool _comments;
   late bool _streakReminder;
   late bool _challengeDeadline;
   bool _saving = false;
@@ -37,6 +38,7 @@ class _NotificationsSettingsScreenState
     _overtaken = p?.notifyOvertaken ?? true;
     _season = p?.notifySeason ?? true;
     _challenges = p?.notifyChallenges ?? true;
+    _comments = p?.notifyComments ?? true;
     _streakReminder = p?.notifyStreakReminder ?? true;
     _challengeDeadline = p?.notifyChallengeDeadline ?? true;
   }
@@ -48,6 +50,7 @@ class _NotificationsSettingsScreenState
         notifyOvertaken: _overtaken,
         notifySeason: _season,
         notifyChallenges: _challenges,
+        notifyComments: _comments,
         notifyStreakReminder: _streakReminder,
         notifyChallengeDeadline: _challengeDeadline,
       );
@@ -57,9 +60,8 @@ class _NotificationsSettingsScreenState
       await _resyncLocals();
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Не удалось сохранить')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Не удалось сохранить')));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -99,10 +101,7 @@ class _NotificationsSettingsScreenState
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text(
-            'Лента',
-            style: TextStyle(fontWeight: FontWeight.w800),
-          ),
+          const Text('Лента', style: TextStyle(fontWeight: FontWeight.w800)),
           const SizedBox(height: 4),
           const Text(
             'События от других появляются в приложении в разделе «Уведомления».',
@@ -130,6 +129,14 @@ class _NotificationsSettingsScreenState
             value: _challenges,
             onChanged: (v) async {
               setState(() => _challenges = v);
+              await _persist();
+            },
+          ),
+          _tile(
+            title: 'Комментарии к постам',
+            value: _comments,
+            onChanged: (v) async {
+              setState(() => _comments = v);
               await _persist();
             },
           ),

@@ -174,6 +174,10 @@ abstract final class XpRules {
         enduranceBonus;
   }
 
+  /// Дневная цель шагов (Health Connect) — меньше, чем зал.
+  static const int xpForStepsDay = 45;
+  static const int defaultStepsGoal = 15000;
+
   /// Baseline (Новичок) — для текста без контекста ранга.
   static const int xpForMissedDay = 35;
   static const int maxMissedDaysPerSync = 7;

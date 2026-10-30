@@ -8,18 +8,20 @@ enum AppNotificationType {
   groupGoal,
   overtaken,
   season,
+  comment,
 }
 
 extension AppNotificationTypeX on AppNotificationType {
   String get wire => switch (this) {
-        AppNotificationType.challengeProgress => 'challenge_progress',
-        AppNotificationType.challengeInvite => 'challenge_invite',
-        AppNotificationType.challengeResult => 'challenge_result',
-        AppNotificationType.groupLead => 'group_lead',
-        AppNotificationType.groupGoal => 'group_goal',
-        AppNotificationType.overtaken => 'overtaken',
-        AppNotificationType.season => 'season',
-      };
+    AppNotificationType.challengeProgress => 'challenge_progress',
+    AppNotificationType.challengeInvite => 'challenge_invite',
+    AppNotificationType.challengeResult => 'challenge_result',
+    AppNotificationType.groupLead => 'group_lead',
+    AppNotificationType.groupGoal => 'group_goal',
+    AppNotificationType.overtaken => 'overtaken',
+    AppNotificationType.season => 'season',
+    AppNotificationType.comment => 'comment',
+  };
 
   static AppNotificationType fromWire(String? raw) {
     return AppNotificationType.values.firstWhere(
@@ -76,7 +78,8 @@ class AppNotification {
       type: AppNotificationTypeX.fromWire(data['type'] as String?),
       title: data['title'] as String? ?? '',
       body: data['body'] as String? ?? '',
-      createdAt: DateTime.tryParse(data['createdAt'] as String? ?? '') ??
+      createdAt:
+          DateTime.tryParse(data['createdAt'] as String? ?? '') ??
           DateTime.now(),
       read: data['read'] as bool? ?? false,
       actorId: data['actorId'] as String? ?? '',
@@ -88,15 +91,15 @@ class AppNotification {
   }
 
   Map<String, dynamic> toCreateMap() => {
-        'type': type.wire,
-        'title': title,
-        'body': body,
-        'createdAt': createdAt.toIso8601String(),
-        'read': false,
-        'actorId': actorId,
-        'actorName': actorName,
-        if (challengeId != null) 'challengeId': challengeId,
-        if (groupChallengeId != null) 'groupChallengeId': groupChallengeId,
-        if (route != null) 'route': route,
-      };
+    'type': type.wire,
+    'title': title,
+    'body': body,
+    'createdAt': createdAt.toIso8601String(),
+    'read': false,
+    'actorId': actorId,
+    'actorName': actorName,
+    if (challengeId != null) 'challengeId': challengeId,
+    if (groupChallengeId != null) 'groupChallengeId': groupChallengeId,
+    if (route != null) 'route': route,
+  };
 }

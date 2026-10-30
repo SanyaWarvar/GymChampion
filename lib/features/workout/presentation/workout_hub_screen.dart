@@ -14,6 +14,7 @@ import '../../quests/presentation/quest_hub_section.dart';
 import '../../rank/data/streak_repository.dart';
 import '../../rank/domain/streak_rules.dart';
 import '../../rank/domain/xp_rules.dart';
+import '../../steps/presentation/steps_hub_card.dart';
 import '../data/local_workout_store.dart';
 import '../data/template_repository.dart';
 import '../data/workout_repository.dart';
@@ -88,6 +89,8 @@ class _WorkoutHubScreenState extends State<WorkoutHubScreen> {
             ),
             const SizedBox(height: 16),
             _StreakCard(),
+            const SizedBox(height: 12),
+            const StepsHubCard(),
             if (_draft != null) ...[
               const SizedBox(height: 16),
               Material(

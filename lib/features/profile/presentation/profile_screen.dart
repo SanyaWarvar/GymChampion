@@ -10,6 +10,7 @@ import '../../auth/domain/app_user.dart';
 import '../../rank/domain/streak_rules.dart';
 import '../../rank/domain/xp_rules.dart';
 import '../../rank/presentation/rank_badge.dart';
+import '../../updates/app_update_prompt.dart';
 import '../../workout/data/workout_repository.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -278,7 +279,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: const Text('Выйти'),
                 ),
                 const SizedBox(height: 20),
-                const AppVersionLabel(),
+                GestureDetector(
+                  onTap: () => AppUpdatePrompt.check(silent: false),
+                  behavior: HitTestBehavior.opaque,
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: AppVersionLabel(),
+                  ),
+                ),
                 const SizedBox(height: 8),
               ],
             ),

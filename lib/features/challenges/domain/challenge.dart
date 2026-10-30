@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 
-enum ChallengeMetric { volume, workouts, xp, run }
+enum ChallengeMetric { volume, workouts, xp, run, steps }
 
 enum ChallengeStatus { pending, active, completed, declined }
 
@@ -10,6 +10,7 @@ extension ChallengeMetricX on ChallengeMetric {
         ChallengeMetric.workouts => 'Тренировки',
         ChallengeMetric.xp => 'XP',
         ChallengeMetric.run => 'Бег (км)',
+        ChallengeMetric.steps => 'Шаги',
       };
 
   String formatAmount(double value) => switch (this) {
@@ -19,6 +20,7 @@ extension ChallengeMetricX on ChallengeMetric {
         ChallengeMetric.volume => '${value.round()} кг',
         ChallengeMetric.run =>
           '${value == value.roundToDouble() ? value.round() : value.toStringAsFixed(1)} км',
+        ChallengeMetric.steps => '${value.round()} ${_stepsWord(value.round())}',
       };
 
   String progressVerb(double value) => switch (this) {
@@ -26,7 +28,18 @@ extension ChallengeMetricX on ChallengeMetric {
         ChallengeMetric.volume => 'набрал ${formatAmount(value)}',
         ChallengeMetric.xp => 'заработал ${formatAmount(value)}',
         ChallengeMetric.workouts => 'закрыл ${formatAmount(value)}',
+        ChallengeMetric.steps => 'прошёл ${formatAmount(value)}',
       };
+}
+
+String _stepsWord(int n) {
+  final mod10 = n % 10;
+  final mod100 = n % 100;
+  if (mod10 == 1 && mod100 != 11) return 'шаг';
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) {
+    return 'шага';
+  }
+  return 'шагов';
 }
 
 String _workoutWord(int n) {

@@ -90,6 +90,12 @@ class AuthController extends ChangeNotifier {
     });
   }
 
+  Future<bool> sendPasswordReset(String email) {
+    return _run(() async {
+      await _repository.sendPasswordResetEmail(email);
+    });
+  }
+
   Future<bool> saveDisplayName(String name) {
     return _run(() async {
       await _repository.setDisplayName(name);
