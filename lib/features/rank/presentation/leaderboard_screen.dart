@@ -369,7 +369,11 @@ class _RankTile extends StatelessWidget {
                     const SizedBox(height: 2),
                     Row(
                       children: [
-                        StreakFlame(days: user.streakDays, compact: true),
+                        StreakFlame(
+                          days: user.streakDays,
+                          lastDate: user.streakLastDate,
+                          compact: true,
+                        ),
                         const SizedBox(width: 8),
                         Flexible(
                           child: Text(

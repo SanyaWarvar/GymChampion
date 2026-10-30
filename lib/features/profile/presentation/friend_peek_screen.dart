@@ -63,7 +63,11 @@ class FriendPeekScreen extends StatelessWidget {
                 style: const TextStyle(color: AppColors.muted),
               ),
               const SizedBox(height: 10),
-              StreakFlame(days: user.streakDays, freezes: user.streakFreezes),
+              StreakFlame(
+                days: user.streakDays,
+                freezes: user.streakFreezes,
+                lastDate: user.streakLastDate,
+              ),
               const SizedBox(height: 8),
               Text(
                 user.hideWeights

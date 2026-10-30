@@ -112,9 +112,8 @@ abstract final class StreakRules {
   }
 
   /// Advances the clock through fully missed days before [now].
-  /// Freeze covers a day without XP loss and without growing the streak —
-  /// it only prevents a reset. Unprotected misses break the streak and are
-  /// counted for XP decay.
+  /// Freeze covers a missed day without XP loss and adds that day to the
+  /// streak. Unprotected misses break the streak and are counted for XP decay.
   static StreakClockResult applyClock(StreakState state, DateTime now) {
     final today = dateOnly(now);
     if (state.lastDate == null) {
@@ -139,7 +138,8 @@ abstract final class StreakRules {
       if (freezes > 0 && days > 0) {
         freezes -= 1;
         freezeUsed += 1;
-        // Freeze preserves the streak count; it does not add a day.
+        days += 1;
+        if (days > best) best = days;
         cursor = next;
       } else {
         penalized += 1;

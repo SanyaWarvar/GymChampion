@@ -148,6 +148,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           StreakFlame(
                             days: profile?.streakDays ?? 0,
                             freezes: profile?.streakFreezes ?? 0,
+                            lastDate: profile?.streakLastDate,
                           ),
                           const SizedBox(width: 10),
                           Expanded(
@@ -324,7 +325,11 @@ String _freezeHint(AppUser? profile) {
   final freezes = profile?.streakFreezes ?? 0;
   final days = profile?.streakDays ?? 0;
   final word = _freezeWord(freezes);
-  if (days == 0) {
+  final last = profile?.streakLastDate;
+  final litToday = days > 0 &&
+      last != null &&
+      StreakRules.dateOnly(last) == StreakRules.dateOnly(DateTime.now());
+  if (!litToday) {
     return '$word в запасе · зажги огонёк сегодня';
   }
   return '$word в запасе';

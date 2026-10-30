@@ -1,5 +1,6 @@
 import '../../rank/domain/mastery_boards.dart';
 import '../../rank/domain/session_records.dart';
+import '../../rank/domain/streak_rules.dart';
 import '../../rank/domain/xp_rules.dart';
 
 class AppUser {
@@ -29,6 +30,7 @@ class AppUser {
     this.streakBest = 0,
     this.streakFreezes = 0,
     this.streakFreezeXp = 0,
+    this.streakLastDate,
     this.sessionRecords = const {},
   });
 
@@ -57,6 +59,7 @@ class AppUser {
   final int streakBest;
   final int streakFreezes;
   final int streakFreezeXp;
+  final DateTime? streakLastDate;
   final Map<String, num> sessionRecords;
 
   bool get hasDisplayName =>
@@ -97,6 +100,7 @@ class AppUser {
       streakBest: (data['streakBest'] as num?)?.toInt() ?? 0,
       streakFreezes: (data['streakFreezes'] as num?)?.toInt() ?? 0,
       streakFreezeXp: (data['streakFreezeXp'] as num?)?.toInt() ?? 0,
+      streakLastDate: StreakRules.parseDate(data['streakLastDate'] as String?),
       sessionRecords: SessionRecords.readFromUserData(data),
     );
   }
@@ -127,6 +131,9 @@ class AppUser {
       'streakBest': streakBest,
       'streakFreezes': streakFreezes,
       'streakFreezeXp': streakFreezeXp,
+      'streakLastDate': streakLastDate == null
+          ? ''
+          : StreakRules.formatDate(streakLastDate!),
       ...{
         for (final board in MasteryBoards.all)
           if ((masteryBests[board.userField] ?? 0) > 0)
@@ -164,6 +171,7 @@ class AppUser {
     int? streakBest,
     int? streakFreezes,
     int? streakFreezeXp,
+    DateTime? streakLastDate,
     Map<String, num>? sessionRecords,
   }) {
     return AppUser(
@@ -195,6 +203,7 @@ class AppUser {
       streakBest: streakBest ?? this.streakBest,
       streakFreezes: streakFreezes ?? this.streakFreezes,
       streakFreezeXp: streakFreezeXp ?? this.streakFreezeXp,
+      streakLastDate: streakLastDate ?? this.streakLastDate,
       sessionRecords: sessionRecords ?? this.sessionRecords,
     );
   }

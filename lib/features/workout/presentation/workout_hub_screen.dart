@@ -353,7 +353,11 @@ class _StreakCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  StreakFlame(days: days, freezes: freezes),
+                  StreakFlame(
+                    days: days,
+                    freezes: freezes,
+                    lastDate: streak.lastDate,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
