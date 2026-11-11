@@ -332,15 +332,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
 String _freezeHint(AppUser? profile) {
   final freezes = profile?.streakFreezes ?? 0;
   final days = profile?.streakDays ?? 0;
+  final best = profile?.streakBest ?? 0;
   final word = _freezeWord(freezes);
   final last = profile?.streakLastDate;
   final litToday = days > 0 &&
       last != null &&
       StreakRules.dateOnly(last) == StreakRules.dateOnly(DateTime.now());
+  final record = best > 0 ? ' · рекорд $best' : '';
   if (!litToday) {
-    return '$word в запасе · зажги огонёк сегодня';
+    return '$word в запасе$record · зажги огонёк сегодня';
   }
-  return '$word в запасе';
+  return '$word в запасе$record';
 }
 
 String _freezeWord(int n) {
@@ -362,17 +364,10 @@ class _FreezeXpBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final freezes = profile?.streakFreezes ?? 0;
     final freezeXp = profile?.streakFreezeXp ?? 0;
     final cost = StreakState.freezeXpCost;
-    final atCap = freezes >= StreakState.freezeCap;
-    final barValue =
-        atCap ? 1.0 : (freezeXp.clamp(0, cost) / cost).toDouble();
-    final label = atCap
-        ? freezeXp > 0
-            ? 'Запас полный · $freezeXp XP в банке'
-            : 'Запас заморозок полный'
-        : 'До заморозки: $freezeXp / $cost XP';
+    final barValue = (freezeXp.clamp(0, cost) / cost).toDouble();
+    final label = 'До заморозки: $freezeXp / $cost XP';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

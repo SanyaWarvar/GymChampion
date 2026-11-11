@@ -317,13 +317,11 @@ class _StreakCard extends StatelessWidget {
         final streak =
             data == null ? const StreakState() : StreakState.fromUserData(data);
         final days = user?.streakDays ?? 0;
+        final best = streak.best;
         final freezes = user?.streakFreezes ?? 0;
         final freezeXp = streak.freezeXp;
-        final atCap = freezes >= StreakState.freezeCap;
         final cost = StreakState.freezeXpCost;
-        final barValue = atCap
-            ? 1.0
-            : (freezeXp.clamp(0, cost) / cost).toDouble();
+        final barValue = (freezeXp.clamp(0, cost) / cost).toDouble();
         final penalty = (data?['lastXpPenalty'] as num?)?.toInt() ?? 0;
         final penaltyAt =
             DateTime.tryParse(data?['lastXpPenaltyAt'] as String? ?? '');
@@ -338,11 +336,7 @@ class _StreakCard extends StatelessWidget {
                 : freezes > 0
                     ? '$freezes в запасе · пропуск без неё −$missHit XP'
                     : 'Без заморозки пропуск: −$missHit XP';
-        final progressLabel = atCap
-            ? freezeXp > 0
-                ? 'Запас полный · $freezeXp XP в банке'
-                : 'Запас заморозок полный'
-            : 'До заморозки: $freezeXp / $cost XP';
+        final progressLabel = 'До заморозки: $freezeXp / $cost XP';
 
         return Container(
           padding: const EdgeInsets.all(14),
@@ -370,6 +364,16 @@ class _StreakCard extends StatelessWidget {
                           days > 0 ? '$days дн. подряд' : 'Ударный режим',
                           style: const TextStyle(fontWeight: FontWeight.w800),
                         ),
+                        if (best > 0) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            'Рекорд: $best дн.',
+                            style: const TextStyle(
+                              color: AppColors.muted,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 2),
                         Text(
                           subtitle,

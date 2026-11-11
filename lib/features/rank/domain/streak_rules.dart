@@ -14,12 +14,11 @@ class StreakState {
   final int best;
   final int freezes;
 
-  /// XP accumulated toward the next freeze (0 .. [freezeXpCost] - 1 when under cap).
+  /// XP accumulated toward the next freeze (0 .. [freezeXpCost] - 1).
   final int freezeXp;
   final DateTime? lastDate;
 
   static const freezeXpCost = 1000;
-  static const freezeCap = 2;
 
   bool get isAlive => days > 0;
 
@@ -95,16 +94,16 @@ abstract final class StreakRules {
     return dateOnly(parsed);
   }
 
-  /// Spends banked XP toward freezes up to [StreakState.freezeCap].
+  /// Spends banked XP toward freezes with no stockpile limit.
   static ({int freezes, int freezeXp}) awardFreezes({
     required int freezes,
     required int freezeXp,
     int xpEarned = 0,
   }) {
-    var f = freezes.clamp(0, StreakState.freezeCap);
+    var f = freezes < 0 ? 0 : freezes;
     var xp = freezeXp + xpEarned;
     if (xp < 0) xp = 0;
-    while (xp >= StreakState.freezeXpCost && f < StreakState.freezeCap) {
+    while (xp >= StreakState.freezeXpCost) {
       xp -= StreakState.freezeXpCost;
       f += 1;
     }
@@ -117,11 +116,11 @@ abstract final class StreakRules {
   static StreakClockResult applyClock(StreakState state, DateTime now) {
     final today = dateOnly(now);
     if (state.lastDate == null) {
-      return StreakClockResult(state: state);
+      return StreakClockResult(state: _withAwardedFreezes(state));
     }
     var last = dateOnly(state.lastDate!);
     if (!last.isBefore(today)) {
-      return StreakClockResult(state: state);
+      return StreakClockResult(state: _withAwardedFreezes(state));
     }
 
     var days = state.days;
@@ -149,7 +148,9 @@ abstract final class StreakRules {
       }
     }
 
-    if (freezeUsed > 0) {
+    // Convert banked XP only while the streak is alive; a broken streak keeps
+    // freezeXp so the next workout can spend it toward new freezes.
+    if (days > 0) {
       final awarded = awardFreezes(freezes: freezes, freezeXp: freezeXp);
       freezes = awarded.freezes;
       freezeXp = awarded.freezeXp;
@@ -165,6 +166,18 @@ abstract final class StreakRules {
       ),
       penalizedDays: penalized,
       freezeDaysUsed: freezeUsed,
+    );
+  }
+
+  static StreakState _withAwardedFreezes(StreakState state) {
+    if (state.days <= 0) return state;
+    final awarded = awardFreezes(
+      freezes: state.freezes,
+      freezeXp: state.freezeXp,
+    );
+    return state.copyWith(
+      freezes: awarded.freezes,
+      freezeXp: awarded.freezeXp,
     );
   }
 

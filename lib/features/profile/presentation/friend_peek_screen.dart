@@ -68,6 +68,13 @@ class FriendPeekScreen extends StatelessWidget {
                 freezes: user.streakFreezes,
                 lastDate: user.streakLastDate,
               ),
+              if (user.streakBest > 0) ...[
+                const SizedBox(height: 6),
+                Text(
+                  'Рекорд: ${user.streakBest} дн.',
+                  style: const TextStyle(color: AppColors.muted),
+                ),
+              ],
               const SizedBox(height: 8),
               Text(
                 user.hideWeights
